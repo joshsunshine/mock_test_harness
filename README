@@ -1,0 +1,13 @@
+Things to do:
+- Call score function
+- Change constants at the top of endpoint_test.py so they refer to the appropriate values. It may be appropriate to
+  use command line parameters or test inputs instead.
+- Figure out how to feed Bradley's kill function a process id and test it
+- Figure out how to shutdown flask cleanly. There is an attempt in the code (shutodwn_server) which comes from the
+    flask documentation, but it doesn't work. There is another idea in the stackoverflow post linked below, so I would
+    start by trying that.
+    http://stackoverflow.com/questions/15562446/how-to-stop-flask-application-without-using-ctrl-c
+- call perturbation fucntions
+- add loggingv
+- address the remaining inline todos
+

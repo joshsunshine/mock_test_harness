@@ -148,8 +148,7 @@ def shutdown_server():
 
 
 def start_server() :
-    # actually start up the flask service. this never returns, so it must
-    # be the last thing in the file
+    #todo: change this address so it doesn't match TA
     app.run(host="0.0.0.0")
 
 

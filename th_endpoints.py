@@ -14,16 +14,21 @@ from th_util import clear_dir, copy_file, start_test
 #import logging
 
 #constants
-TEST_DIR_PATH = "/Users/jssunshi/PycharmProjects/mock_test_harness/test"
-CONFIG_FILE_SOURCE_PATH = "/Users/jssunshi/PycharmProjects/mock_test_harness/config_src_dir/config_file.json"
-CONFIG_FILE_DEST_PATH = "/Users/jssunshi/PycharmProjects/mock_test_harness/test/data"
-START_SCRIPT_PATH = "/Users/jssunshi/PycharmProjects/mock_test_harness/config_src_dir/mock_start.sh"
-TEST_DIR_DEST_PATH = "/Users/jssunshi/PycharmProjects/mock_test_harness/test_dest_dir/"
-LOG_FILE = "/Users/jssunshi/PycharmProjects/mock_test_harness/test/logs.txt"
+
+## todo: take this on the command line or infer it or make it vagrant-specific
+BASE_PATH = "/Users/jssunshi/PycharmProjects/mock_test_harness"
+
+TEST_DIR_PATH = BASE_PATH + "/test"
+CONFIG_FILE_SOURCE_PATH = BASE_PATH + "/config_src_dir/config_file.json"
+CONFIG_FILE_DEST_PATH = BASE_PATH + "/test/data"
+START_SCRIPT_PATH = BASE_PATH + "/config_src_dir/mock_start.sh"
+TEST_DIR_DEST_PATH = BASE_PATH + "/test_dest_dir/"
+LOG_FILE = BASE_PATH + "/test/logs.txt"
+
 #todo: use appropriate URL
 TA_URL = "?"
 #frequency of thread
-POOL_TIME = .1 #Seconds
+POOL_TIME = 0.1 #Seconds
 
 #logging.basicConfig(filename=LOG_FILE,level=logging.DEBUG)
 

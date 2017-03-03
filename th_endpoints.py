@@ -3,6 +3,11 @@ import atexit
 import uuid
 import subprocess
 import shutil
+import requests
+import json
+import signal
+import os
+import time
 from flask import Flask, request
 from th_constants import READY, STATUS, DONE, ERROR, SHUTDOWN
 from th_util import clear_dir, copy_file, start_test
@@ -15,6 +20,8 @@ CONFIG_FILE_DEST_PATH = "/Users/jssunshi/PycharmProjects/mock_test_harness/test/
 START_SCRIPT_PATH = "/Users/jssunshi/PycharmProjects/mock_test_harness/config_src_dir/mock_start.sh"
 TEST_DIR_DEST_PATH = "/Users/jssunshi/PycharmProjects/mock_test_harness/test_dest_dir/"
 LOG_FILE = "/Users/jssunshi/PycharmProjects/mock_test_harness/test/logs.txt"
+#todo: use appropriate URL
+TA_URL = "?"
 #frequency of thread
 POOL_TIME = .1 #Seconds
 
@@ -40,11 +47,11 @@ def create_app():
         global yourThread
         global isReady
         global counter
-        # Do your stuff with commonDataStruct Here
         if isReady :
-            #todo: remove this and call observe endpoint on the TA
             #todo: add logging
+            #todo: remove this and call observe endpoint on the TA
             counter += 1
+            # th_action("/action/observe", True, "")
         # Set the next thread to happen
         yourThread = threading.Timer(POOL_TIME, observe, ())
         yourThread.start()
@@ -69,6 +76,9 @@ app = create_app()
 # 2. For challenge problem 2 - whether to bump the kinect, at what time, and how much
 #
 # And the configuration files would be in the JSON format we've seen before.
+# >We are probably better off writing unittests like endpoint_test.py instead
+# >of parsing a special JSON file for this purpose. I think it will be for most
+# >testers.
 #
 # The test harness would then, for each test:
 #
@@ -76,9 +86,12 @@ app = create_app()
 # 2. Copy the configutation file to /test/data
 # 3. Launch start.sh
 # 4. Wait for the ta to come up (which it does by calling an endpoint on th)
+# > This "waiting" happens naturally
 # 5. Call the ta/action/set_* to whatever is set in the config file (if there is something in there). On second thoughts, the ta will do this.
+# > Yes, this unnecessary
 # 6. Spawn a thread that calls /action/observe and record the observations (probably in a file)
-# these are embedded in the action logic
+# > this thread is spawned at initialization (see create_app above), but doesn't start observing
+# > until ready is called
 def run_test():
     clear_dir(TEST_DIR_PATH)
     copy_file(CONFIG_FILE_SOURCE_PATH, CONFIG_FILE_DEST_PATH)
@@ -102,18 +115,18 @@ def copy_testdir() :
 
 
 def kill_all(proc, sig=signal.SIGKILL):
-	parent_pid = proc.pid
-	ps_command = subprocess.Popen("ps -o pid --ppid %d --noheaders" % parent_pid, shell=True, stdout=subprocess.PIPE)
-	ps_output = ps_command.stdout.read()
-	retcode = ps_command.wait()
-	assert retcode == 0, "ps command returned %d: %s" % (retcode, ps_output)
-	os.killpg(parent_pid, signal.SIGKILL)
-	for pid_str in ps_output.split("\n")[:-1]:
-		os.kill(int(pid_str), sig)
-	subprocess.Popen("killall gzserver", shell=True)
-	time.sleep(5)
-	subprocess.Popen("rm -rf /home/turtlebot/.ros/log/*", shell=True)
-	subprocess.Popen("rm -rf /home/turtlebot/.gazebo/log/*", shell=True)
+    parent_pid = proc.pid
+    ps_command = subprocess.Popen("ps -o pid --ppid %d --noheaders" % parent_pid, shell=True, stdout=subprocess.PIPE)
+    ps_output = ps_command.stdout.read()
+    retcode = ps_command.wait()
+    assert retcode == 0, "ps command returned %d: %s" % (retcode, ps_output)
+    os.killpg(parent_pid, signal.SIGKILL)
+    for pid_str in ps_output.split("\n")[:-1]:
+        os.kill(int(pid_str), sig)
+    subprocess.Popen("killall gzserver", shell=True)
+    time.sleep(5)
+    subprocess.Popen("rm -rf /home/turtlebot/.ros/log/*", shell=True)
+    subprocess.Popen("rm -rf /home/turtlebot/.gazebo/log/*", shell=True)
 
 def score() :
     #todo: implement me
@@ -122,6 +135,7 @@ def score() :
 def cancelThread() :
     global yourThread
     yourThread.cancel()
+
 
 # from: http://flask.pocoo.org/snippets/67/
 # not working investigate this
@@ -138,14 +152,16 @@ def start_server() :
     # be the last thing in the file
     app.run(host="0.0.0.0")
 
-if __name__ == "__main__":
-    # start up the ros node and make an action server
-    # rospy.init_node("mock_th")
-    # client = actionlib.SimpleActionClient("ig_action_server",
-    #                                      ig_action_msgs.msg.InstructionGraphAction)
-    # client.wait_for_server()
-    start_server()
 
+# call one of the ta endpoints
+# todo: change is_get to enum?
+def th_action(action, is_get, contents) :
+    dest = TA_URL + action
+    #todo: check if contents is empty
+    if (is_get) :
+        requests.get(dest, data=json.dumps(contents))
+    else :
+        requests.post(dest, data=json.dumps(contents))
 
 # three endpoints: /ready, /action/status, /action/done, /error; all post
 @app.route(READY.url, methods=READY.methods)
@@ -153,6 +169,7 @@ def ready():
     global isReady
     isReady = True
     #todo: call test specific perturbation at appropriate time
+    # e.g. # th_action("/action/place_obstacle", False, "{...}")
     return 'Ready'
 
 
@@ -185,3 +202,11 @@ def error():
 def shutdown():
     shutdown_server()
     return 'Server shutting down...'
+
+if __name__ == "__main__":
+    # start up the ros node and make an action server
+    # rospy.init_node("mock_th")
+    # client = actionlib.SimpleActionClient("ig_action_server",
+    #                                      ig_action_msgs.msg.InstructionGraphAction)
+    # client.wait_for_server()
+    start_server()
